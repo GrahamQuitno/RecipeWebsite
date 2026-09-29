@@ -2,10 +2,17 @@
 
 Track each phase here as implementation progresses.
 
-- [ ] **1. Choose the foundation**
-  - Choose the application stack and deployment target.
-  - Choose the database and photo storage approach.
-  - Decide how Auth0 sessions and callbacks will work for the chosen stack.
+## Decisions
+
+- Application stack: TypeScript + Next.js.
+- Deployment target: Vercel.
+- Database and photo storage: Supabase (Postgres + Storage).
+- Sign-in: Auth0 Universal Login using the Next.js SDK; one pre-created owner account and public sign-up disabled.
+- Authorization: All database writes and photo uploads/changes go through the Next.js server, which checks that the signed-in Auth0 user is the owner.
+- Supabase access: Keep credentials server-side in Vercel environment variables; do not expose them to the browser. Defer Supabase's Auth0 JWT/RLS integration.
+
+- [x] **1. Choose the foundation**
+  - Stack, hosting, storage, sign-in, and authorization approach recorded above.
 - [ ] **2. Build the public recipe experience**
   - Create the application shell and recipe data model.
   - Add sample recipes.
