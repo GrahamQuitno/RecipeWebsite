@@ -13,7 +13,7 @@ Track each phase here as implementation progresses.
 
 - [x] **1. Choose the foundation**
   - Stack, hosting, storage, sign-in, and authorization approach recorded above.
-- [ ] **2. Build the public recipe experience**
+- [x] **2. Build the public recipe experience**
   - Create the application shell and recipe data model.
   - Add sample recipes.
   - Build responsive recipe list and detail pages.
