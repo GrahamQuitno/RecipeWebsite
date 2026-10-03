@@ -1,6 +1,6 @@
 # Recipe Website Design Spec
 
-**Status:** Design phases complete. This is the concise reference for implementation. Auth0 integration details depend on the application stack; rounding and scaled-amount display formatting are deferred.
+**Status:** Design phases complete. This is the concise reference for implementation. The application uses the Auth0 Next.js SDK, and scaled ingredient amounts are rounded to three decimal places with trailing zeroes removed.
 
 ## Product and access
 
@@ -25,7 +25,7 @@
 - All entered filter groups narrow the same results. Every selected tag and included ingredient must match; a match for any excluded ingredient removes the recipe.
 - Ingredient search compares only names recorded on the recipe. It does not account for synonyms, sub-ingredients, or cross-contact and must not be described as an allergy-safety guarantee.
 - Matching cards appear below the form on the same page. No matches produce an empty results list; errors explain their cause beside the relevant controls.
-- The recipe detail scaler starts at 1× and accepts positive numbers, including decimals. It changes displayed ingredient amounts only; units and saved recipe data remain unchanged. Rounding and display formatting are deferred.
+- The recipe detail scaler starts at 1× and accepts positive numbers, including decimals. It changes displayed ingredient amounts only; units and saved recipe data remain unchanged. Scaled values round to at most three decimal places, omit trailing zeroes, and show `<0.001` when a positive value rounds to zero.
 
 ## Pages and flows
 
@@ -42,10 +42,12 @@
 - Keep the layout clean and content-focused, with comfortable spacing and prominent recipe photos where available.
 - Controls need clear labels, keyboard operation, visible focus, readable text, and sufficient contrast. Show errors beside the relevant fields.
 
-## Implementation follow-ups
+## Photo storage and upload constraints
 
-- Choose the application stack, then select the Auth0 SDK and callback/session integration.
-- Define amount parsing, rounding, and display formatting for scaled quantities.
-- Define photo upload constraints and storage behavior.
+- Store one recipe photo in a public Supabase Storage bucket named `recipe-photos`; public access matches the public recipe pages.
+- Accept JPEG, PNG, and WebP files up to 3 MiB. Validate the declared type and file signature on the server.
+- Store each upload at a generated, immutable path. Keep that path and required screen-reader description (up to 250 characters) with the recipe row.
+- Upload, replace, and remove images only through owner-checked Next.js server actions. The browser never receives the Supabase secret key.
+- Replacing or removing a photo updates the recipe record before deleting the old storage object, so failed recipe saves keep the current photo available.
 
 Ingredient exclusions use recorded recipe data only; FDA guidance notes that allergy risks can also involve undeclared cross-contact ([FDA food allergy guidance](https://www.fda.gov/food/nutrition-food-labeling-and-critical-foods/food-allergies)).

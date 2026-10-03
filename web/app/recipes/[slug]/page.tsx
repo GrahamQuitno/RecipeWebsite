@@ -2,37 +2,48 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { RecipeIngredientList } from "@/components/recipe-ingredient-list";
+import { DeleteRecipeForm } from "@/components/delete-recipe-form";
 import { RecipeTags } from "@/components/recipe-tags";
-import { getRecipeBySlug, recipes } from "@/lib/recipes";
+import { getRecipeBySlug } from "@/lib/recipe-data";
+import { getCurrentOwnerSession } from "@/lib/owner-auth";
+import { isSupabaseConfigured } from "@/lib/supabase-admin";
+import { readRecipeSearch, serializeRecipeSearch, type RecipeSearchParams } from "@/lib/recipe-search";
 
 interface RecipePageProps {
   params: Promise<{ slug: string }>;
-}
-
-export function generateStaticParams() {
-  return recipes.map((recipe) => ({ slug: recipe.slug }));
+  searchParams: Promise<RecipeSearchParams>;
 }
 
 export async function generateMetadata({ params }: RecipePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const recipe = getRecipeBySlug(slug);
+  const recipe = await getRecipeBySlug(slug);
 
   return {
     title: recipe?.title ?? "Recipe not found",
   };
 }
 
-export default async function RecipePage({ params }: RecipePageProps) {
-  const { slug } = await params;
-  const recipe = getRecipeBySlug(slug);
+export default async function RecipePage({ params, searchParams }: RecipePageProps) {
+  const [{ slug }, rawSearchParams] = await Promise.all([params, searchParams]);
+  const [recipe, ownerSession] = await Promise.all([
+    getRecipeBySlug(slug),
+    getCurrentOwnerSession(),
+  ]);
 
   if (!recipe) {
     notFound();
   }
 
+  const ownerCanEdit = Boolean(ownerSession && isSupabaseConfigured());
+
+  const searchQuery = serializeRecipeSearch(readRecipeSearch(rawSearchParams));
+  const returnQuery = [searchQuery, "restoreScroll=1"].filter(Boolean).join("&");
+  const returnHref = `/?${returnQuery}`;
+
   return (
     <article className="page-frame recipe-detail">
-      <Link className="back-link" href="/">
+      <Link className="back-link" href={returnHref}>
         <span aria-hidden="true">←</span> All recipes
       </Link>
 
@@ -40,26 +51,18 @@ export default async function RecipePage({ params }: RecipePageProps) {
         <p className="eyebrow">From the recipe collection</p>
         <h1>{recipe.title}</h1>
         <RecipeTags tags={recipe.tags} />
+        {ownerCanEdit ? (
+          <div className="recipe-owner-controls">
+            <Link className="owner-edit-link" href={`/recipes/${recipe.slug}/edit`}>
+              Edit recipe
+            </Link>
+            <DeleteRecipeForm recipeId={recipe.id} recipeSlug={recipe.slug} title={recipe.title} />
+          </div>
+        ) : null}
       </header>
 
       <div className="recipe-detail__body">
-        <section aria-labelledby="ingredients-title" className="detail-section">
-          <div className="detail-section__heading">
-            <p className="eyebrow">Gather</p>
-            <h2 id="ingredients-title">Ingredients</h2>
-          </div>
-          <ul className="ingredient-list">
-            {recipe.ingredients.map((ingredient, index) => (
-              <li className="ingredient-list__item" key={`${ingredient.name}-${index}`}>
-                <span className="ingredient-list__amount">
-                  {ingredient.amount.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                  {ingredient.unit ? ` ${ingredient.unit}` : ""}
-                </span>
-                <span>{ingredient.name}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <RecipeIngredientList ingredients={recipe.ingredients} />
 
         <section aria-labelledby="instructions-title" className="detail-section">
           <div className="detail-section__heading">

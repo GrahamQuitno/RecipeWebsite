@@ -9,6 +9,7 @@ export interface RecipePhoto {
   alt: string;
   width: number;
   height: number;
+  storagePath?: string;
 }
 
 export interface Recipe {
